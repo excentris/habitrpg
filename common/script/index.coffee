@@ -839,8 +839,7 @@ api.wrap = (user, main=true) ->
           user.items.gear.owned[item.key] = true
           message = user.fns.handleTwoHanded(item, null, req)
           message ?= i18n.t('messageBought', {itemText: item.text(req.language)}, req.language)
-          if not user.achievements.ultimateGear and item.last
-            user.fns.ultimateGear()
+          if item.last then user.fns.ultimateGear()
         user.stats.gp -= item.value
         cb? {code:200, message}, _.pick(user,$w 'items achievements stats')
 
@@ -1645,32 +1644,19 @@ api.wrap = (user, main=true) ->
     # ----------------------------------------------------------------------
     # Achievements
     # ----------------------------------------------------------------------
-    ultimateGear: () ->
-      # on the server this is a LoDash transform, on the client its an object
-      gear = if window? then user.items.gear.owned else user.items.gear.owned.toObject()
-      ownedLastGear = _.chain(content.gear.flat)
-        .pick(_.keys gear)
-        .values()
-        .filter (gear) -> gear.last
-
-      lastGearClassTypeMatrix = {}
-      _.each content.classes, (klass) ->
-        lastGearClassTypeMatrix[klass] = {}
-        #_.each content.gearTypes, (type) ->
-        _.each ['armor', 'weapon', 'shield', 'head'], (type) ->
-          lastGearClassTypeMatrix[klass][type] = false
-          return true # false exits the each loop early
-
-      ownedLastGear.each (gear) ->
-        lastGearClassTypeMatrix[gear.klass]["shield"] = true if gear.twoHanded
-        lastGearClassTypeMatrix[gear.klass][gear.type] = true
-
-      shouldGrant = _(lastGearClassTypeMatrix)
-        .values()
-        .reduce(((ans, klass) -> ans or _(klass).values().reduce(((ans, gearType) -> ans and gearType), true)), false)
-        .valueOf()
-
-      user.achievements.ultimateGear = shouldGrant
+    ultimateGear: ->
+      # on the server this is a Lodash transform, on the client its an object
+      owned = if window? then user.items.gear.owned else user.items.gear.owned.toObject()
+      user.achievements.ultimateGearSets ?= {healer: false, wizard: false, rogue: false, warrior: false}
+      content.classes.forEach (klass) ->
+        user.achievements.ultimateGearSets[klass] = _.reduce ['armor', 'shield', 'head', 'weapon'], (soFarGood, type) ->
+          found = _.find content.gear.tree[type][klass], {last:true}
+          soFarGood and (!found or owned[found.key]==true) #!found only true when weapon is two-handed (mages)
+        , true # start with true, else `and` will fail right away
+      user.markModified? 'achievements.ultimateGearSets'
+      if _.contains(user.achievements.ultimateGearSets, true)
+        user.flags.armoireEnabled = true
+        user.markModified? 'flags'
 
     nullify: ->
       user.ops = null

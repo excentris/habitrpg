@@ -34,7 +34,8 @@ var UserSchema = new Schema({
     originalUser: Boolean,
     helpedHabit: Boolean, //TODO: Deprecate this. Superseded by habitSurveys
     habitSurveys: Number,
-    ultimateGear: Boolean,
+    ultimateGear: Boolean, //TODO: Deprecate this. Superseded by ultimateGearSets
+    ultimateGearSets: Schema.Types.Mixed,
     beastMaster: Boolean,
     beastMasterCount: Number,
     mountMaster: Boolean,
@@ -149,7 +150,9 @@ var UserSchema = new Schema({
     // Needed to track the tip to send inside the email
     weeklyRecapEmailsPhase: {type: Number, 'default': 0},
     communityGuidelinesAccepted: {type: Boolean, 'default': false},
-    cronCount: {type:Number, 'default':0}
+    cronCount: {type:Number, 'default':0},
+    armoireEnabled: {type: Boolean, 'default': false},
+    armoireOpened: {type: Boolean, 'default': false}
   },
   history: {
     exp: Array, // [{date: Date, value: Number}], // big peformance issues if these are defined
