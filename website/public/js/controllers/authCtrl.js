@@ -46,6 +46,16 @@ angular.module('habitrpg')
         if($rootScope.selectedLanguage) url = url + '?lang=' + $rootScope.selectedLanguage.code;
         $http.post(url, scope.registerVals).success(function(data, status, headers, config) {
           runAuth(data.id, data.apiToken);
+          if (status == 200) {
+            mixpanel.alias(data._id);
+            if (data.auth.facebook) {
+              mixpanel.register({'authType':'facebook','email':data.auth.facebook._json.email})
+            } else {
+              mixpanel.register({'authType':'email','email':data.auth.local.email})
+            }
+            mixpanel.register({'UUID':data._id,'language':data.preferences.language});
+            mixpanel.track('Registration');
+          }
         }).error(errorAlert);
       };
 
